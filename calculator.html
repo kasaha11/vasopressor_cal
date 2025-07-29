@@ -141,6 +141,16 @@
             padding: 20px;
             text-align: center;
         }
+        /* 용량 강조 스타일 */
+        .initial-dose {
+            background-color: #e8f5e9 !important; /* 연한 녹색 */
+        }
+        .max-dose {
+            background-color: #fff3e0 !important; /* 연한 주황색 */
+        }
+        .initial-dose td, .max-dose td {
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -248,23 +258,28 @@
             if (drug === 'qphrine') {
                 tableBody = document.querySelector("#qphrine-table tbody");
                 dosages = qphrineDosages;
-                // 농도: (20mg * 1000mcg/mg) / 270ml = 74.074... mcg/ml
                 concentration = 20000 / 270; 
             } else if (drug === 'epi') {
                 tableBody = document.querySelector("#epi-table tbody");
                 dosages = epiDosages;
-                // 농도: (10mg * 1000mcg/mg) / 260ml = 38.461... mcg/ml
                 concentration = 10000 / 260;
             }
 
-            // 기존 테이블 내용 초기화
             tableBody.innerHTML = '';
 
-            // 새 계산 결과로 테이블 채우기
             dosages.forEach(dosage => {
-                // 주입 속도(ml/hr) = (용량(mcg/kg/min) * 체중(kg) * 60(min/hr)) / 농도(mcg/ml)
                 const rate = (dosage * weight * 60) / concentration;
                 const row = document.createElement('tr');
+                
+                // 약물별로 용량 범위에 따라 클래스 추가
+                if (drug === 'qphrine') {
+                    if (dosage >= 0.05 && dosage <= 0.1) row.classList.add('initial-dose');
+                    if (dosage === 0.5) row.classList.add('max-dose');
+                } else if (drug === 'epi') {
+                    if (dosage >= 0.02 && dosage <= 0.05) row.classList.add('initial-dose');
+                    if (dosage === 0.5) row.classList.add('max-dose');
+                }
+
                 row.innerHTML = `<td>${dosage}</td><td>${rate.toFixed(1)}</td>`;
                 tableBody.appendChild(row);
             });
@@ -275,20 +290,20 @@
          */
         function initializeVasoTable() {
             const tableBody = document.querySelector("#vaso-table tbody");
-            tableBody.innerHTML = ''; // Clear existing content
+            tableBody.innerHTML = '';
             vasoData.forEach(item => {
-                // 주입 속도(ml/hr) = 용량(U/min) * 60(min/hr) / 농도(U/ml)
-                // 농도 = 60U / 103ml
-                // rate = item.dosage * 60 / (60 / 103) = item.dosage * 103
                 const rate = item.dosage * 103;
                 const row = document.createElement('tr');
+
+                // 용량 범위에 따라 클래스 추가
+                if (item.dosage >= 0.01 && item.dosage <= 0.03) row.classList.add('initial-dose');
+                if (item.dosage === 0.06) row.classList.add('max-dose');
+
                 row.innerHTML = `<td>${item.dosage.toFixed(2)}</td><td>${rate.toFixed(1)}</td>`;
                 tableBody.appendChild(row);
             });
         }
         
-        // 페이지가 처음 로드될 때 Vaso 테이블을 채우고,
-        // 체중 입력 필드에 포커스를 줍니다.
         window.onload = () => {
             initializeVasoTable();
             document.getElementById('weight').focus();
