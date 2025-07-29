@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>약물 주입 용량 계산기</title>
+    <style>
+        /* 기본 페이지 스타일 */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            justify-content: center;
+        }
+        /* 전체 컨테이너 */
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background-color: #ffffff;
+            padding: 25px 30px;
+            border-radius: 12px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+        /* 제목 스타일 */
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 15px;
+            text-align: center;
+            font-size: 1.8em;
+            margin-bottom: 25px;
+        }
+        /* 체중 입력 섹션 */
+        .input-section {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 35px;
+            padding: 25px;
+            background-color: #ecf0f1;
+            border-radius: 8px;
+        }
+        .input-section label {
+            font-size: 1.25em;
+            font-weight: 600;
+        }
+        .input-section input {
+            width: 120px;
+            padding: 12px;
+            font-size: 1.2em;
+            text-align: center;
+            border: 2px solid #bdc3c7;
+            border-radius: 5px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .input-section input:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+            outline: none;
+        }
+        .input-section button {
+            padding: 12px 25px;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #fff;
+            background-color: #3498db;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        .input-section button:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+        /* 결과 표시 그리드 */
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 25px;
+        }
+        /* 약물 정보 카드 */
+        .drug-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #fff;
+            transition: box-shadow 0.3s;
+        }
+        .drug-card:hover {
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+        }
+        .drug-card h3 {
+            background-color: #34495e;
+            color: white;
+            margin: 0;
+            padding: 15px 20px;
+            font-size: 1.2em;
+        }
+        /* 약물 추가 정보 섹션 */
+        .drug-info {
+            padding: 15px 20px;
+            background-color: #f8f9fa;
+            font-size: 0.9em;
+        }
+        .drug-info p {
+            margin: 5px 0;
+            color: #555;
+        }
+        .drug-info p strong {
+            color: #34495e;
+        }
+        /* 테이블 스타일 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 14px 15px;
+            text-align: center;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        thead th {
+            background-color: #ecf0f1;
+            font-weight: 600;
+            color: #34495e;
+        }
+        tbody tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+        tbody tr:hover {
+            background-color: #e8f4fd;
+        }
+        .placeholder-text {
+            color: #95a5a6;
+            padding: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>💉 약물 주입 용량 계산기</h1>
+
+        <div class="input-section">
+            <label for="weight">환자 체중 (kg):</label>
+            <input type="number" id="weight" placeholder="예: 65" onkeyup="if(event.key==='Enter') calculate();">
+            <button onclick="calculate()">계산하기</button>
+        </div>
+
+        <div class="results-grid">
+            <!-- Q-phrine 결과 카드 -->
+            <div class="drug-card">
+                <h3>Q-phrine</h3>
+                <div class="drug-info">
+                    <p><strong>조성:</strong> Q-phrine 20mg + 생리식염수 250ml = Total 270ml</p>
+                    <p><strong>초기 투여량:</strong> 0.05 ~ 0.1 mcg/kg/min</p>
+                    <p><strong>일반적 최대용량:</strong> 0.5 mcg/kg/min</p>
+                </div>
+                <table id="qphrine-table">
+                    <thead><tr><th>용량 (mcg/kg/min)</th><th>주입 속도 (ml/hr)</th></tr></thead>
+                    <tbody>
+                        <tr><td colspan="2" class="placeholder-text">체중을 입력하고 계산 버튼을 누르세요.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Epi 결과 카드 -->
+            <div class="drug-card">
+                <h3>Epinephrine</h3>
+                 <div class="drug-info">
+                    <p><strong>조성:</strong> Epi 10mg (10앰플) + 생리식염수 250ml = Total 260ml</p>
+                    <p><strong>초기 투여량:</strong> 0.02 ~ 0.05 mcg/kg/min</p>
+                    <p><strong>일반적 최대용량:</strong> 0.5 mcg/kg/min</p>
+                </div>
+                <table id="epi-table">
+                    <thead><tr><th>용량 (mcg/kg/min)</th><th>주입 속도 (ml/hr)</th></tr></thead>
+                    <tbody>
+                        <tr><td colspan="2" class="placeholder-text">체중을 입력하고 계산 버튼을 누르세요.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Vaso 결과 카드 -->
+            <div class="drug-card" id="vaso-card">
+                <h3>Vasopressin</h3>
+                 <div class="drug-info">
+                    <p><strong>조성:</strong> Vaso 60U (3앰플) + 수액 100ml = Total 103ml</p>
+                    <p><strong>초기 투여량:</strong> 0.01 ~ 0.03 U/min</p>
+                    <p><strong>일반적 최대용량:</strong> 0.06 U/min</p>
+                </div>
+                <table id="vaso-table">
+                    <thead><tr><th>용량 (U/min)</th><th>주입 속도 (ml/hr)</th></tr></thead>
+                    <tbody>
+                        <!-- Vaso 데이터는 페이지 로딩 시 채워짐 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 약물별 기준 용량(mcg/kg/min) 배열
+        const qphrineDosages = [0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.3, 0.4, 0.5];
+        const epiDosages = [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.2, 0.3, 0.4, 0.5];
+        
+        // Vaso 데이터 (체중 무관)
+        const vasoData = [
+            { dosage: 0.01, rate: 1.03 },
+            { dosage: 0.02, rate: 2.06 },
+            { dosage: 0.03, rate: 3.09 },
+            { dosage: 0.04, rate: 4.12 },
+            { dosage: 0.06, rate: 6.18 }
+        ];
+
+        /**
+         * '계산하기' 버튼 클릭 시 실행되는 메인 함수
+         */
+        function calculate() {
+            const weightInput = document.getElementById('weight');
+            const weight = parseFloat(weightInput.value);
+
+            if (!weight || weight <= 0) {
+                alert("정확한 체중을 양수로 입력해주세요.");
+                weightInput.focus();
+                return;
+            }
+
+            // 각 약물 테이블 계산 및 업데이트
+            updatePerKgTable('qphrine', weight);
+            updatePerKgTable('epi', weight);
+        }
+
+        /**
+         * 체중 기반 약물 테이블을 계산하고 업데이트하는 함수
+         * @param {string} drug - 약물 이름 ('qphrine' 또는 'epi')
+         * @param {number} weight - 환자 체중 (kg)
+         */
+        function updatePerKgTable(drug, weight) {
+            let tableBody, dosages, concentration;
+            
+            if (drug === 'qphrine') {
+                tableBody = document.querySelector("#qphrine-table tbody");
+                dosages = qphrineDosages;
+                // 농도: (20mg * 1000mcg/mg) / 270ml = 74.074... mcg/ml
+                concentration = 20000 / 270; 
+            } else if (drug === 'epi') {
+                tableBody = document.querySelector("#epi-table tbody");
+                dosages = epiDosages;
+                // 농도: (10mg * 1000mcg/mg) / 260ml = 38.461... mcg/ml
+                concentration = 10000 / 260;
+            }
+
+            // 기존 테이블 내용 초기화
+            tableBody.innerHTML = '';
+
+            // 새 계산 결과로 테이블 채우기
+            dosages.forEach(dosage => {
+                // 주입 속도(ml/hr) = (용량(mcg/kg/min) * 체중(kg) * 60(min/hr)) / 농도(mcg/ml)
+                const rate = (dosage * weight * 60) / concentration;
+                const row = document.createElement('tr');
+                row.innerHTML = `<td>${dosage}</td><td>${rate.toFixed(1)}</td>`;
+                tableBody.appendChild(row);
+            });
+        }
+        
+        /**
+         * Vaso 테이블을 초기화하는 함수 (페이지 로딩 시 한 번만 실행)
+         */
+        function initializeVasoTable() {
+            const tableBody = document.querySelector("#vaso-table tbody");
+            tableBody.innerHTML = ''; // Clear existing content
+            vasoData.forEach(item => {
+                // 주입 속도(ml/hr) = 용량(U/min) * 60(min/hr) / 농도(U/ml)
+                // 농도 = 60U / 103ml
+                // rate = item.dosage * 60 / (60 / 103) = item.dosage * 103
+                const rate = item.dosage * 103;
+                const row = document.createElement('tr');
+                row.innerHTML = `<td>${item.dosage.toFixed(2)}</td><td>${rate.toFixed(1)}</td>`;
+                tableBody.appendChild(row);
+            });
+        }
+        
+        // 페이지가 처음 로드될 때 Vaso 테이블을 채우고,
+        // 체중 입력 필드에 포커스를 줍니다.
+        window.onload = () => {
+            initializeVasoTable();
+            document.getElementById('weight').focus();
+        };
+
+    </script>
+</body>
+</html>
