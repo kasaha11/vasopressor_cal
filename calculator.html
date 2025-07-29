@@ -36,14 +36,20 @@
         /* 체중 입력 섹션 */
         .input-section {
             display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
             gap: 15px;
             margin-bottom: 35px;
             padding: 25px;
             background-color: #ecf0f1;
             border-radius: 8px;
+        }
+        .input-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
         }
         .input-section label {
             font-size: 1.25em;
@@ -77,6 +83,13 @@
         .input-section button:hover {
             background-color: #2980b9;
             transform: translateY(-2px);
+        }
+        #calculated-weight-display {
+            font-size: 1em;
+            font-weight: bold;
+            color: #e74c3c;
+            margin-top: 10px;
+            height: 20px;
         }
         /* 결과 표시 그리드 */
         .results-grid {
@@ -159,9 +172,12 @@
         <h1>💉 약물 주입 용량 계산기</h1>
 
         <div class="input-section">
-            <label for="weight">환자 체중 (kg):</label>
-            <input type="number" id="weight" placeholder="예: 65" onkeyup="if(event.key==='Enter') calculate();">
-            <button onclick="calculate()">계산하기</button>
+            <div class="input-row">
+                <label for="weight">환자 체중 (40-100kg):</label>
+                <input type="number" id="weight" placeholder="예: 63" onkeyup="if(event.key==='Enter') calculate();">
+                <button onclick="calculate()">계산하기</button>
+            </div>
+            <div id="calculated-weight-display"></div>
         </div>
 
         <div class="results-grid">
@@ -216,18 +232,30 @@
     </div>
 
     <script>
-        // 약물별 기준 용량(mcg/kg/min) 배열
+        // 원본 표 데이터
+        const weightColumns = [40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100];
         const qphrineDosages = [0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.3, 0.4, 0.5];
         const epiDosages = [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.2, 0.3, 0.4, 0.5];
-        
-        // Vaso 데이터 (체중 무관)
-        const vasoData = [
-            { dosage: 0.01, rate: 1.03 },
-            { dosage: 0.02, rate: 2.06 },
-            { dosage: 0.03, rate: 3.09 },
-            { dosage: 0.04, rate: 4.12 },
-            { dosage: 0.06, rate: 6.18 }
-        ];
+
+        const qphrineData = {
+            0.02: [0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.5, 1.6], 0.04: [1.3, 1.5, 1.6, 1.8, 1.9, 2.1, 2.3, 2.4, 2.6, 2.8, 2.9, 3.1, 3.2],
+            0.06: [1.9, 2.2, 2.4, 2.7, 2.9, 3.2, 3.4, 3.6, 3.9, 4.1, 4.4, 4.6, 4.9], 0.08: [2.6, 2.9, 3.2, 3.6, 3.9, 4.2, 4.5, 4.9, 5.2, 5.5, 5.8, 6.2, 6.5],
+            0.1:  [3.2, 3.6, 4.1, 4.5, 4.9, 5.3, 5.7, 6.1, 6.5, 6.9, 7.3, 7.7, 8.1], 0.12: [3.9, 4.4, 4.9, 5.3, 5.8, 6.3, 6.8, 7.3, 7.8, 8.3, 8.7, 9.2, 9.7],
+            0.14: [4.5, 5.1, 5.7, 6.2, 6.8, 7.4, 7.9, 8.5, 9.1, 9.6, 10.2, 10.8, 11.3], 0.16: [5.2, 5.8, 6.5, 7.1, 7.8, 8.4, 9.1, 9.7, 10.4, 11.0, 11.7, 12.3, 13.0],
+            0.18: [5.8, 6.6, 7.3, 8.0, 8.7, 9.5, 10.2, 10.9, 11.7, 12.4, 13.1, 13.9, 14.6], 0.2: [6.5, 7.3, 8.1, 8.9, 9.7, 10.5, 11.3, 12.2, 13.0, 13.8, 14.6, 15.4, 16.2],
+            0.3: [9.7, 10.9, 12.2, 13.4, 14.6, 15.8, 17.0, 18.2, 19.4, 20.7, 21.9, 23.1, 24.3], 0.4: [13.0, 14.6, 16.2, 17.8, 19.4, 21.1, 22.7, 24.3, 25.9, 27.5, 29.2, 30.8, 32.4],
+            0.5: [16.2, 18.2, 20.3, 22.3, 24.3, 26.3, 28.4, 30.4, 32.4, 34.4, 36.5, 38.5, 40.5]
+        };
+        const epiData = {
+            0.01: [0.6, 0.7, 0.8, 0.9, 0.9, 1.0, 1.1, 1.2, 1.2, 1.3, 1.4, 1.5, 1.6], 0.02: [1.2, 1.4, 1.6, 1.7, 1.9, 2.0, 2.2, 2.3, 2.5, 2.7, 2.8, 3.0, 3.1],
+            0.03: [1.9, 2.1, 2.3, 2.6, 2.8, 3.0, 3.3, 3.5, 3.7, 4.0, 4.2, 4.4, 4.7], 0.04: [2.5, 2.8, 3.1, 3.4, 3.7, 4.1, 4.4, 4.7, 5.0, 5.3, 5.6, 5.9, 6.2],
+            0.05: [3.1, 3.5, 3.9, 4.3, 4.7, 5.1, 5.5, 5.9, 6.2, 6.6, 7.0, 7.4, 7.8], 0.06: [3.7, 4.2, 4.7, 5.1, 5.6, 6.1, 6.6, 7.0, 7.5, 8.0, 8.4, 8.9, 9.4],
+            0.07: [4.4, 4.9, 5.5, 6.0, 6.6, 7.1, 7.6, 8.2, 8.7, 9.3, 9.8, 10.4, 10.9], 0.08: [5.0, 5.6, 6.2, 6.9, 7.5, 8.1, 8.7, 9.4, 10.0, 10.6, 11.2, 11.9, 12.5],
+            0.09: [5.6, 6.3, 7.0, 7.7, 8.4, 9.1, 9.8, 10.5, 11.2, 11.9, 12.6, 13.3, 14.0], 0.1: [6.2, 7.0, 7.8, 8.6, 9.4, 10.1, 10.9, 11.7, 12.5, 13.3, 14.0, 14.8, 15.6],
+            0.2: [12.5, 14.0, 15.6, 17.2, 18.7, 20.3, 21.8, 23.4, 25.0, 26.5, 28.1, 29.6, 31.2], 0.3: [18.7, 21.1, 23.4, 25.7, 28.1, 30.4, 32.8, 35.1, 37.4, 39.8, 42.1, 44.5, 46.8],
+            0.4: [25.0, 28.1, 31.2, 34.3, 37.4, 40.6, 43.7, 46.8, 49.9, 53.0, 56.2, 59.3, 62.4], 0.5: [31.2, 35.1, 39.0, 42.9, 46.8, 50.7, 54.6, 58.5, 62.4, 66.3, 70.2, 74.1, 78.0]
+        };
+        const vasoData = [ { dosage: 0.01 }, { dosage: 0.02 }, { dosage: 0.03 }, { dosage: 0.04 }, { dosage: 0.06 }];
 
         /**
          * '계산하기' 버튼 클릭 시 실행되는 메인 함수
@@ -235,43 +263,60 @@
         function calculate() {
             const weightInput = document.getElementById('weight');
             const weight = parseFloat(weightInput.value);
+            const display = document.getElementById('calculated-weight-display');
+            const qphrineTbody = document.querySelector("#qphrine-table tbody");
+            const epiTbody = document.querySelector("#epi-table tbody");
 
-            if (!weight || weight <= 0) {
-                alert("정확한 체중을 양수로 입력해주세요.");
+            // 체중 범위 유효성 검사
+            if (!weight || weight < 40 || weight > 100) {
+                // 경고 메시지를 페이지 내에 표시
+                display.textContent = "40kg에서 100kg 사이의 체중을 입력해주세요.";
                 weightInput.focus();
+                // 에러 발생 시 테이블 초기화
+                qphrineTbody.innerHTML = '<tr><td colspan="2" class="placeholder-text">유효한 체중을 입력해주세요.</td></tr>';
+                epiTbody.innerHTML = '<tr><td colspan="2" class="placeholder-text">유효한 체중을 입력해주세요.</td></tr>';
                 return;
             }
 
+            // 가장 가까운 5kg 단위로 체중 반올림
+            const roundedWeight = Math.round(weight / 5) * 5;
+            display.textContent = `계산 기준 체중: ${roundedWeight}kg`;
+
             // 각 약물 테이블 계산 및 업데이트
-            updatePerKgTable('qphrine', weight);
-            updatePerKgTable('epi', weight);
+            updateTableFromLookup('qphrine', roundedWeight);
+            updateTableFromLookup('epi', roundedWeight);
         }
 
         /**
-         * 체중 기반 약물 테이블을 계산하고 업데이트하는 함수
+         * 표 조회 방식으로 테이블을 업데이트하는 함수
          * @param {string} drug - 약물 이름 ('qphrine' 또는 'epi')
-         * @param {number} weight - 환자 체중 (kg)
+         * @param {number} roundedWeight - 반올림된 환자 체중 (kg)
          */
-        function updatePerKgTable(drug, weight) {
-            let tableBody, dosages, concentration;
+        function updateTableFromLookup(drug, roundedWeight) {
+            let tableBody, dosages, data;
             
             if (drug === 'qphrine') {
                 tableBody = document.querySelector("#qphrine-table tbody");
                 dosages = qphrineDosages;
-                concentration = 20000 / 270; 
+                data = qphrineData;
             } else if (drug === 'epi') {
                 tableBody = document.querySelector("#epi-table tbody");
                 dosages = epiDosages;
-                concentration = 10000 / 260;
+                data = epiData;
             }
 
             tableBody.innerHTML = '';
+            const weightIndex = weightColumns.indexOf(roundedWeight);
+
+            if (weightIndex === -1) {
+                tableBody.innerHTML = `<tr><td colspan="2" class="placeholder-text">오류: 해당 체중 값을 찾을 수 없습니다.</td></tr>`;
+                return;
+            }
 
             dosages.forEach(dosage => {
-                const rate = (dosage * weight * 60) / concentration;
+                const rate = data[dosage][weightIndex];
                 const row = document.createElement('tr');
                 
-                // 약물별로 용량 범위에 따라 클래스 추가
                 if (drug === 'qphrine') {
                     if (dosage >= 0.05 && dosage <= 0.1) row.classList.add('initial-dose');
                     if (dosage === 0.5) row.classList.add('max-dose');
@@ -280,7 +325,7 @@
                     if (dosage === 0.5) row.classList.add('max-dose');
                 }
 
-                row.innerHTML = `<td>${dosage}</td><td>${rate.toFixed(1)}</td>`;
+                row.innerHTML = `<td>${dosage.toFixed(2)}</td><td>${rate.toFixed(1)}</td>`;
                 tableBody.appendChild(row);
             });
         }
@@ -295,7 +340,6 @@
                 const rate = item.dosage * 103;
                 const row = document.createElement('tr');
 
-                // 용량 범위에 따라 클래스 추가
                 if (item.dosage >= 0.01 && item.dosage <= 0.03) row.classList.add('initial-dose');
                 if (item.dosage === 0.06) row.classList.add('max-dose');
 
